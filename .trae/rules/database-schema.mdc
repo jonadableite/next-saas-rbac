@@ -1,0 +1,357 @@
+## Purpose & Scope
+
+This rule provides an overview of the SaaS RBAC application's primary database schema and functions. It outlines the main tables, their relationships, and crucial interaction patterns. This guides both AI and developers in querying and mutating data safely and consistently.
+
+**MUST** be consulted and updated whenever database schema modifications are made, as mandated by `@memory.mdc`.
+
+---
+
+## Schema Overview
+
+The database uses PostgreSQL with Prisma ORM. The schema is defined in `prisma/schema.prisma` and should be kept in sync with this documentation.
+
+---
+
+## Core Tables
+
+### Users Table
+
+**Table Name**: `users`
+
+**Purpose**: Stores user accounts and authentication information
+
+**Columns**:
+- `id` (UUID, Primary Key): Unique user identifier
+- `email` (String, Unique, Required): User email address
+- `password` (String, Required): Hashed password (bcrypt)
+- `name` (String, Required): User display name
+- `emailVerified` (Boolean, Default: false): Email verification status
+- `role` (Enum: USER, ADMIN, MODERATOR, Default: USER): User role for RBAC
+- `createdAt` (DateTime, Default: now()): Account creation timestamp
+- `updatedAt` (DateTime, Auto-updated): Last update timestamp
+- `deletedAt` (DateTime, Nullable): Soft delete timestamp
+
+**Indexes**:
+- Primary key on `id`
+- Unique index on `email`
+- Index on `role` for role-based queries
+- Index on `deletedAt` for soft delete filtering
+
+**Relationships**:
+- One-to-many with `sessions`
+- One-to-many with `userRoles` (many-to-many via junction table)
+- One-to-many with `userPermissions` (many-to-many via junction table)
+
+**RLS Policies** (if using Supabase):
+- Users can read their own data
+- Admins can read all users
+- Users can update their own data (except role)
+- Only admins can update roles
+
+---
+
+### Sessions Table
+
+**Table Name**: `sessions`
+
+**Purpose**: Stores user authentication sessions
+
+**Columns**:
+- `id` (UUID, Primary Key): Unique session identifier
+- `userId` (UUID, Foreign Key → users.id): Associated user
+- `token` (String, Unique, Required): JWT or session token
+- `expiresAt` (DateTime, Required): Session expiration timestamp
+- `ipAddress` (String, Nullable): Client IP address
+- `userAgent` (String, Nullable): Client user agent
+- `createdAt` (DateTime, Default: now()): Session creation timestamp
+- `updatedAt` (DateTime, Auto-updated): Last update timestamp
+
+**Indexes**:
+- Primary key on `id`
+- Unique index on `token`
+- Index on `userId` for user session queries
+- Index on `expiresAt` for cleanup queries
+
+**Relationships**:
+- Many-to-one with `users`
+
+**Cascade Behavior**:
+- ON DELETE CASCADE: Deleting a user deletes all their sessions
+
+---
+
+### Roles Table
+
+**Table Name**: `roles`
+
+**Purpose**: Defines available roles in the system
+
+**Columns**:
+- `id` (UUID, Primary Key): Unique role identifier
+- `name` (String, Unique, Required): Role name (e.g., "ADMIN", "USER", "MODERATOR")
+- `description` (String, Nullable): Human-readable role description
+- `createdAt` (DateTime, Default: now()): Role creation timestamp
+- `updatedAt` (DateTime, Auto-updated): Last update timestamp
+
+**Indexes**:
+- Primary key on `id`
+- Unique index on `name`
+
+**Relationships**:
+- Many-to-many with `users` via `userRoles` junction table
+- One-to-many with `rolePermissions` (many-to-many via junction table)
+
+**Default Roles**:
+- `ADMIN`: Full system access
+- `USER`: Standard user access
+- `MODERATOR`: Content moderation access (if applicable)
+
+---
+
+### Permissions Table
+
+**Table Name**: `permissions`
+
+**Purpose**: Defines granular permissions for resources and actions
+
+**Columns**:
+- `id` (UUID, Primary Key): Unique permission identifier
+- `resource` (String, Required): Resource name (e.g., "users", "roles", "content")
+- `action` (String, Required): Action name (e.g., "read", "write", "delete", "manage")
+- `description` (String, Nullable): Human-readable permission description
+- `createdAt` (DateTime, Default: now()): Permission creation timestamp
+
+**Indexes**:
+- Primary key on `id`
+- Composite unique index on `(resource, action)` for uniqueness
+
+**Relationships**:
+- Many-to-many with `roles` via `rolePermissions` junction table
+- Many-to-many with `users` via `userPermissions` junction table
+
+**Permission Format**:
+- Format: `{resource}:{action}` (e.g., "users:read", "roles:write")
+- Wildcard: `*` means all permissions
+
+---
+
+### UserRoles Junction Table
+
+**Table Name**: `userRoles`
+
+**Purpose**: Many-to-many relationship between users and roles
+
+**Columns**:
+- `id` (UUID, Primary Key): Unique junction record identifier
+- `userId` (UUID, Foreign Key → users.id): User reference
+- `roleId` (UUID, Foreign Key → roles.id): Role reference
+- `assignedAt` (DateTime, Default: now()): Assignment timestamp
+- `assignedBy` (UUID, Foreign Key → users.id, Nullable): Admin who assigned the role
+
+**Indexes**:
+- Primary key on `id`
+- Composite unique index on `(userId, roleId)` to prevent duplicates
+- Index on `userId` for user role queries
+- Index on `roleId` for role user queries
+
+**Relationships**:
+- Many-to-one with `users` (as user)
+- Many-to-one with `users` (as assigner)
+- Many-to-one with `roles`
+
+**Cascade Behavior**:
+- ON DELETE CASCADE: Deleting a user removes all role assignments
+- ON DELETE CASCADE: Deleting a role removes all user assignments
+
+---
+
+### RolePermissions Junction Table
+
+**Table Name**: `rolePermissions`
+
+**Purpose**: Many-to-many relationship between roles and permissions
+
+**Columns**:
+- `id` (UUID, Primary Key): Unique junction record identifier
+- `roleId` (UUID, Foreign Key → roles.id): Role reference
+- `permissionId` (UUID, Foreign Key → permissions.id): Permission reference
+- `assignedAt` (DateTime, Default: now()): Assignment timestamp
+
+**Indexes**:
+- Primary key on `id`
+- Composite unique index on `(roleId, permissionId)` to prevent duplicates
+- Index on `roleId` for role permission queries
+- Index on `permissionId` for permission role queries
+
+**Relationships**:
+- Many-to-one with `roles`
+- Many-to-one with `permissions`
+
+**Cascade Behavior**:
+- ON DELETE CASCADE: Deleting a role removes all permission assignments
+- ON DELETE CASCADE: Deleting a permission removes all role assignments
+
+---
+
+### UserPermissions Junction Table
+
+**Table Name**: `userPermissions`
+
+**Purpose**: Direct many-to-many relationship between users and permissions (for override permissions)
+
+**Columns**:
+- `id` (UUID, Primary Key): Unique junction record identifier
+- `userId` (UUID, Foreign Key → users.id): User reference
+- `permissionId` (UUID, Foreign Key → permissions.id): Permission reference
+- `granted` (Boolean, Default: true): Whether permission is granted (true) or denied (false)
+- `assignedAt` (DateTime, Default: now()): Assignment timestamp
+- `assignedBy` (UUID, Foreign Key → users.id, Nullable): Admin who assigned the permission
+
+**Indexes**:
+- Primary key on `id`
+- Composite unique index on `(userId, permissionId)` to prevent duplicates
+- Index on `userId` for user permission queries
+- Index on `permissionId` for permission user queries
+
+**Relationships**:
+- Many-to-one with `users` (as user)
+- Many-to-one with `users` (as assigner)
+- Many-to-one with `permissions`
+
+**Cascade Behavior**:
+- ON DELETE CASCADE: Deleting a user removes all permission assignments
+- ON DELETE CASCADE: Deleting a permission removes all user assignments
+
+**Note**: Direct user permissions override role-based permissions. Use sparingly for special cases.
+
+---
+
+## Database Functions (if using Supabase)
+
+### check_user_permission(user_id UUID, permission_resource TEXT, permission_action TEXT)
+
+**Purpose**: Check if a user has a specific permission (via roles or direct assignment)
+
+**Returns**: Boolean
+
+**Logic**:
+1. Check direct user permissions (userPermissions table)
+2. If no direct permission, check user's roles and their permissions
+3. Return true if permission found, false otherwise
+
+---
+
+### get_user_permissions(user_id UUID)
+
+**Purpose**: Get all permissions for a user (from roles + direct assignments)
+
+**Returns**: Table of permissions
+
+**Logic**:
+1. Get all permissions from user's roles
+2. Get all direct user permissions
+3. Merge and deduplicate
+4. Return combined list
+
+---
+
+## Query Patterns
+
+### Get User with Roles and Permissions
+
+```prisma
+const user = await prisma.user.findUnique({
+  where: { id: userId },
+  include: {
+    userRoles: {
+      include: {
+        role: {
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
+      }
+    },
+    userPermissions: {
+      include: {
+        permission: true
+      }
+    }
+  }
+})
+```
+
+### Check Permission
+
+```prisma
+// Check if user has permission via role
+const hasPermission = await prisma.rolePermission.findFirst({
+  where: {
+    role: {
+      userRoles: {
+        some: {
+          userId: userId
+        }
+      }
+    },
+    permission: {
+      resource: 'users',
+      action: 'read'
+    }
+  }
+})
+
+// Or check direct user permission
+const hasDirectPermission = await prisma.userPermission.findFirst({
+  where: {
+    userId: userId,
+    permission: {
+      resource: 'users',
+      action: 'read'
+    },
+    granted: true
+  }
+})
+```
+
+---
+
+## Migration Guidelines
+
+1. **Always create migrations** for schema changes using `prisma migrate dev`
+2. **Never modify** production database directly
+3. **Test migrations** in development before applying to production
+4. **Backup database** before running migrations in production
+5. **Document breaking changes** in migration files
+
+---
+
+## Indexing Strategy
+
+- **Primary keys**: Always indexed automatically
+- **Foreign keys**: Indexed for join performance
+- **Unique constraints**: Indexed automatically
+- **Frequently queried columns**: Add explicit indexes (e.g., `role`, `email`, `deletedAt`)
+- **Composite indexes**: Use for multi-column queries (e.g., `(userId, roleId)`)
+
+---
+
+## Soft Delete Pattern
+
+The `users` table uses soft delete via `deletedAt` column:
+- Set `deletedAt` to current timestamp instead of deleting
+- Filter out soft-deleted records in queries: `where: { deletedAt: null }`
+- Hard delete only when necessary (GDPR compliance, etc.)
+
+---
+
+## Notes
+
+- All UUIDs use `uuid_generate_v4()` or Prisma's `cuid()` depending on configuration
+- Timestamps are stored in UTC
+- Use transactions for multi-table operations
+- Consider using database-level constraints for data integrity

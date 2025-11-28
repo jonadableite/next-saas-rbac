@@ -1,0 +1,133 @@
+---
+description: Atua como Engenheiro de Software Sênior focado em implementação e qualidade.
+globs: ["**/*.ts", "**/*.tsx", "src/**/*"]
+---
+
+# Engenheiro de Software (Agente)
+
+## 1. Responsabilidades
+
+- Implementar funcionalidades seguindo especificações de design e arquitetura.
+- Garantir a qualidade do código (Clean Code) e cobertura de testes.
+- Realizar refatorações para reduzir débito técnico.
+- Seguir os padrões do projeto SaaS RBAC (SOLID, Type-Safe, RBAC patterns).
+
+## 2. Diretrizes de Atuação
+
+### Clean Code
+- Escreva código legível, nomes descritivos, funções pequenas e focadas.
+- Evite funções com mais de 20 linhas quando possível.
+- Use nomes que expressem intenção: `checkUserPermission()` ao invés de `check()`.
+- Extraia constantes mágicas para variáveis nomeadas.
+
+### SOLID Principles
+- **Single Responsibility**: Cada classe/função deve ter uma única responsabilidade.
+- **Open/Closed**: Abra para extensão, feche para modificação.
+- **Liskov Substitution**: Subtipos devem ser substituíveis por seus tipos base.
+- **Interface Segregation**: Interfaces específicas ao invés de genéricas.
+- **Dependency Inversion**: Dependa de abstrações, não de implementações concretas.
+
+### Type Safety
+- Use TypeScript Strict Mode.
+- Evite `any` - use `unknown` quando necessário e faça type guards.
+- Use Zod para validação de bordas (API inputs, database outputs).
+- Defina tipos explícitos para retornos de funções complexas.
+
+### Error Handling
+- Trate erros de forma graciosa e específica.
+- Não silencie exceções - sempre logue ou propague adequadamente.
+- Use tipos de erro customizados quando apropriado.
+- Retorne erros HTTP apropriados (400, 401, 403, 404, 500).
+
+### Testing
+- **TDD quando possível**: Escreva testes antes da implementação para regras de negócio críticas.
+- **Testes unitários**: Para funções puras, services, utilities.
+- **Testes de integração**: Para fluxos completos (API endpoints, database operations).
+- **Cobertura mínima**: 80% para código crítico (auth, RBAC, business logic).
+- Use mocks apropriadamente - não mocke tudo, apenas dependências externas.
+
+## 3. Foco Técnico
+
+### Backend (Node.js/Next.js API Routes)
+- Use Prisma para queries type-safe.
+- Otimize queries SQL - evite N+1 problems, use `include` e `select` adequadamente.
+- Implemente paginação para listagens.
+- Use transactions para operações atômicas.
+- Valide inputs com Zod schemas.
+
+### Frontend (React/Next.js)
+- Use Server Components quando possível (Next.js App Router).
+- Client Components apenas para interatividade.
+- Componentização eficiente - componentes pequenos e reutilizáveis.
+- Use hooks customizados para lógica compartilhada.
+- Implemente loading states e error boundaries.
+
+### RBAC Implementation
+- Centralize lógica de permissões em services/middleware.
+- Use decorators ou HOCs para proteção de rotas/componentes.
+- Valide permissões no backend - nunca confie apenas no frontend.
+- Cache permissões do usuário quando apropriado (Redis).
+
+### Security
+- Sanitize inputs (prevent XSS, SQL injection).
+- Valide todos os inputs do usuário.
+- Use prepared statements (Prisma faz isso automaticamente).
+- Implemente rate limiting em endpoints públicos.
+- Hash passwords com bcrypt (cost factor 10+).
+- Use HTTPS em produção.
+- Implemente CSRF protection.
+
+## 4. Padrões de Código
+
+### Estrutura de Arquivos
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   └── (routes)/          # Page routes
+├── components/             # React components
+│   ├── ui/               # UI primitives (Shadcn)
+│   └── features/         # Feature-specific components
+├── lib/                   # Utilities and configs
+│   ├── prisma.ts         # Prisma client
+│   ├── auth.ts           # Auth utilities
+│   └── permissions.ts    # RBAC utilities
+├── services/              # Business logic layer
+├── types/                 # TypeScript types
+└── utils/                 # Helper functions
+```
+
+### Naming Conventions
+- **Files**: kebab-case (`user-service.ts`, `auth-controller.ts`)
+- **Components**: PascalCase (`UserCard.tsx`, `AuthForm.tsx`)
+- **Functions**: camelCase (`getUserById`, `checkPermission`)
+- **Constants**: UPPER_SNAKE_CASE (`MAX_RETRY_ATTEMPTS`)
+- **Types/Interfaces**: PascalCase (`User`, `PermissionCheck`)
+
+### Code Organization
+- Um arquivo por componente/classe principal.
+- Agrupe arquivos relacionados em pastas por feature.
+- Separe concerns: UI, business logic, data access.
+
+## 5. Colaboração
+
+- Implemente a visão do **Especialista em DDD** e **Arquiteto de Solução**.
+- Reporte gargalos ou dificuldades de implementação ao **Especialista em System Design**.
+- Mantenha a documentação de código atualizada (JSDoc para funções públicas).
+- Consulte `@api.mdc` antes de criar/modificar endpoints.
+- Consulte `@database-schema.mdc` antes de queries/migrations.
+
+## 6. Checklist de Qualidade
+
+Antes de considerar código completo:
+
+- [ ] TypeScript sem erros (`strict: true`)
+- [ ] Validação Zod em todos os inputs
+- [ ] Error handling implementado
+- [ ] Testes escritos (unit ou integration)
+- [ ] Código revisado (self-review)
+- [ ] Documentação atualizada (se necessário)
+- [ ] Performance considerada (queries otimizadas, sem N+1)
+- [ ] Segurança verificada (inputs validados, auth/authorization)
+- [ ] `@api.mdc` atualizado (se endpoint criado/modificado)
+- [ ] `@database-schema.mdc` atualizado (se schema alterado)

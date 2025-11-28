@@ -1,0 +1,174 @@
+## MUST DO WITH EACH REQUEST
+
+- **First action** for each chat request should be to read `@self.mdc` and `@project.mdc`
+- **Last action** for each chat should be to update `@self.mdc`, `@project.mdc`, `@api.mdc` or `@database-schema.mdc` if needed.
+
+## Objective
+
+Ensure Cursor and Trae avoid repeating known mistakes by persistently logging corrections and learning. All requests must reference stored knowledge in:
+
+- `.trae/rules/self.mdc` — for known mistakes and their fixes
+- `.trae/rules/project.mdc` — for user preferences and custom rules
+- `.trae/rules/database-schema.mdc` — for database schema and functions
+- `.trae/rules/api.mdc` — API endpoint documentation
+
+---
+
+## Rule: Learn from Mistakes
+
+### On Every Mistake or Deprecated Warning:
+
+1. **Detect** incorrect or suboptimal outputs.
+2. **Correct** the mistake.
+3. **Save** both mistake and correction in `@self.mdc` using the format:
+
+```markdown
+### Mistake: [Short Description]
+
+**Wrong**:
+```
+[Insert incorrect code or logic]
+```
+
+**Correct**:
+```
+[Insert corrected code or logic]
+```
+
+**Context**: [When/why this mistake occurred]
+```
+
+---
+
+## Rule: Respect and Reference Project Preferences
+
+### On Every Request:
+
+1. **Read** `@project.mdc` for:
+   - User's preferred tools, stack, coding style, formatting, naming, etc.
+   - Preferences like TypeScript over JS, specific libraries, etc.
+
+2. **Apply** these preferences without exception.
+
+3. **Save** any new user preferences in `@project.mdc`.
+
+---
+
+## Rule: Consult and Maintain Database Schema
+
+### On Every Request Involving Database Interaction:
+
+1. **Read** `@database-schema.mdc` to understand:
+   - Current database tables, columns, types, and relationships.
+   - Constraints, indexes, and RLS policies if documented.
+   - Query patterns and best practices.
+
+2. **Apply** this schema knowledge when generating SQL queries, database migrations, or backend code interacting with the database.
+
+3. **Update** `@database-schema.mdc` if database schema modifications are made during the development process, ensuring it reflects the latest state.
+
+---
+
+## Rule: Consult and Maintain API Documentation
+
+### On Every Request Involving API Interaction or Definition:
+
+1. **Read** `@api.mdc` to understand:
+   - Existing API endpoints, their purpose, request/response formats, and authentication requirements.
+   - Error response formats and status codes.
+   - Rate limiting and versioning.
+
+2. **Apply** this knowledge when generating code that consumes or defines APIs.
+
+3. **Update** `@api.mdc` if API endpoints are created, modified, or deleted during the development process, ensuring it reflects the latest state. Document:
+   - Endpoint path and HTTP method
+   - Purpose and use case
+   - Request body/params structure
+   - Response structure
+   - Authentication requirements
+   - Error cases
+
+---
+
+## Rule: Prevent Repetition
+
+### On Every Request:
+
+- Always **read `@self.mdc`** before applying logic.
+- If a related mistake is found:
+  - **Use** the corrected approach instead.
+  - **Log** that a prior fix was applied (optional debug).
+
+---
+
+## Rule: Keep Memory Clean and Updated
+
+- If a better fix is found for an existing issue:
+  - **Update** that section in `@self.mdc`.
+- Structure the memory files with clear `###` headers.
+- Group by topic if needed.
+- **MUST DO**: Only keep general information in memory, don't be specific to a file or request.
+- **MUST DO**: Information saved in memory should be useful and reusable.
+- **MUST DO**: Remove outdated information that is no longer relevant.
+
+---
+
+## Rule: Expert Agent Coordination
+
+### When Multiple Expert Agents Are Involved:
+
+1. **Software Engineer** should consult:
+   - `@expert-solution-architect.mdc` for architectural patterns
+   - `@expert-system-design.mdc` for scalability concerns
+   - `@api.mdc` before creating/modifying endpoints
+   - `@database-schema.mdc` before database operations
+
+2. **Solution Architect** should:
+   - Coordinate between System Design and Engineering
+   - Ensure consistency across layers
+   - Update `@api.mdc` and `@database-schema.mdc` when patterns change
+
+3. **System Design Expert** should:
+   - Provide scalability guidelines
+   - Document architectural decisions
+   - Consider infrastructure implications
+
+---
+
+## Storage Paths
+
+- `.trae/rules/self.mdc`: Persistent log of mistakes and their fixes
+- `.trae/rules/project.mdc`: User preferences and custom rules
+- `.trae/rules/database-schema.mdc`: Database schema and functions
+- `.trae/rules/api.mdc`: API endpoint documentation
+- `.trae/rules/expert-software-engineer.mdc`: Software engineering guidelines
+- `.trae/rules/expert-solution-architect.mdc`: Solution architecture guidelines
+- `.trae/rules/expert-system-design.mdc`: System design guidelines
+- `.trae/rules/memory.mdc`: This file - memory management rules
+
+---
+
+## Enforcement
+
+- Failing to read or update memory files after a mistake is a **critical error**.
+- All requests must use and comply with stored knowledge and preferences.
+- When in doubt, consult the relevant expert agent rules (`@expert-*.mdc`).
+- Always update documentation (`@api.mdc`, `@database-schema.mdc`) when making changes.
+
+---
+
+## Update Frequency
+
+- **`@self.mdc`**: Update immediately when a mistake is detected and corrected.
+- **`@project.mdc`**: Update when user preferences change or new patterns emerge.
+- **`@api.mdc`**: Update whenever API endpoints are created, modified, or deleted.
+- **`@database-schema.mdc`**: Update whenever database schema changes (migrations, new tables, etc.).
+
+---
+
+## Notes
+
+- Memory files are living documents - they should evolve with the project.
+- Don't duplicate information across files - reference instead.
+- Keep entries concise but complete enough to be useful.
+- Review and clean up outdated entries periodically.

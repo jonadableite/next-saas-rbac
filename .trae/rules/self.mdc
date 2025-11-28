@@ -1,0 +1,53 @@
+# Self Learning - Mistakes and Fixes
+
+This file tracks mistakes made during development and their corrections to prevent repetition.
+
+---
+
+## Format for Entries
+
+```markdown
+### Mistake: [Short Description]
+
+**Wrong**:
+```
+[Insert incorrect code or logic]
+```
+
+**Correct**:
+```
+[Insert corrected code or logic]
+```
+
+**Context**: [When/why this mistake occurred]
+```
+
+---
+
+## Mistakes Log
+
+_This file will be populated as mistakes are detected and corrected during development._
+
+---
+
+## General Patterns to Avoid
+
+### Type Safety
+- **Avoid**: Using `any` type
+- **Prefer**: `unknown` with type guards or proper typing
+
+### Error Handling
+- **Avoid**: Silencing errors with empty catch blocks
+- **Prefer**: Proper error logging and user-friendly error messages
+
+### Database Queries
+- **Avoid**: N+1 query problems
+- **Prefer**: Using Prisma `include` or `select` to fetch related data in one query
+
+### Security
+- **Avoid**: Trusting client-side validation alone
+- **Prefer**: Always validate and authorize on the backend
+
+---
+
+_Add specific mistakes below as they are encountered and fixed._

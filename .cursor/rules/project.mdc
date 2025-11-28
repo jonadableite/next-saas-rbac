@@ -1,0 +1,232 @@
+# Project Rules and Preferences
+
+This file contains user preferences, project-specific rules, and coding standards for the SaaS RBAC project.
+
+---
+
+## Project Overview
+
+- **Name**: SaaS RBAC Application
+- **Stack**: Next.js 14+ (App Router), TypeScript, PostgreSQL, Prisma
+- **Purpose**: SaaS application with Role-Based Access Control (RBAC)
+
+---
+
+## Technology Preferences
+
+### Language & Framework
+- **TypeScript**: Strict mode enabled
+- **Next.js**: App Router (not Pages Router)
+- **React**: Latest stable version
+
+### Database
+- **ORM**: Prisma
+- **Database**: PostgreSQL
+- **Migrations**: Prisma Migrate
+
+### Validation
+- **Library**: Zod (not Yup)
+- **Usage**: Validate all API inputs and form submissions
+
+### UI & Styling
+- **CSS Framework**: Tailwind CSS
+- **Component Library**: Shadcn/ui
+- **Icons**: Lucide React (or similar)
+
+### Testing
+- **Unit Tests**: Vitest
+- **E2E Tests**: Playwright
+- **Coverage**: Minimum 80% for critical code (auth, RBAC, business logic)
+
+### Authentication
+- **Library**: NextAuth.js or Better Auth
+- **Session**: JWT or database sessions
+
+---
+
+## Coding Standards
+
+### File Naming
+- **Files**: kebab-case (`user-service.ts`, `auth-controller.tsx`)
+- **Components**: PascalCase (`UserCard.tsx`, `AuthForm.tsx`)
+- **Directories**: kebab-case (`user-management/`, `api-routes/`)
+
+### Code Style
+- **Indentation**: 2 spaces
+- **Quotes**: Single quotes for strings (TypeScript/JavaScript)
+- **Semicolons**: Yes (TypeScript/JavaScript)
+- **Trailing Commas**: Yes (multi-line arrays/objects)
+
+### TypeScript
+- **Strict Mode**: Enabled
+- **No `any`**: Use `unknown` with type guards if necessary
+- **Explicit Returns**: Define return types for functions (especially public APIs)
+
+### Imports
+- **Order**: 
+  1. External libraries
+  2. Internal modules (`@/...`)
+  3. Relative imports (`./`, `../`)
+  4. Types (use `type` keyword when importing types only)
+
+---
+
+## Architecture Preferences
+
+### Project Structure
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   └── (routes)/          # Page routes
+├── components/             # React components
+│   ├── ui/               # UI primitives
+│   └── features/         # Feature-specific
+├── lib/                   # Utilities and configs
+├── services/              # Business logic
+├── types/                 # TypeScript types
+└── utils/                 # Helper functions
+```
+
+### Patterns
+- **SOLID Principles**: Strictly followed
+- **Repository Pattern**: For data access (when complexity warrants it)
+- **Service Layer**: For business logic
+- **Controller/Route Handler**: For HTTP handling
+
+### API Design
+- **RESTful**: Follow REST conventions
+- **Error Format**: Standardized error response format (see `@api.mdc`)
+- **Versioning**: `/api/v1/...` when needed (currently defaults to v1)
+
+---
+
+## RBAC Implementation
+
+### Permission Format
+- Format: `{resource}:{action}` (e.g., `users:read`, `roles:write`)
+- Wildcard: `*` means all permissions
+
+### Role Hierarchy
+- `ADMIN`: Full system access
+- `MODERATOR`: Content moderation (if applicable)
+- `USER`: Standard user access
+
+### Security Rules
+- **Backend Validation**: Always validate permissions on the backend
+- **Frontend Display**: Hide UI elements based on permissions (UX only, not security)
+- **Caching**: Cache user permissions (Redis) with appropriate TTL
+
+---
+
+## Documentation Requirements
+
+### Must Document
+- API endpoints in `@api.mdc`
+- Database schema changes in `@database-schema.mdc`
+- Architecture decisions (ADRs) in `docs/adr/`
+- Complex business logic (JSDoc comments)
+
+### Code Comments
+- Use JSDoc for public functions/APIs
+- Explain "why" not "what" in comments
+- Keep comments up-to-date with code changes
+
+---
+
+## Git Workflow
+
+### Branch Naming
+- `feature/description`: New features
+- `fix/description`: Bug fixes
+- `refactor/description`: Code refactoring
+- `docs/description`: Documentation updates
+
+### Commit Messages
+- Format: `type: description`
+- Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+- Be descriptive
+
+---
+
+## Performance Considerations
+
+### Optimization
+- Use Server Components by default (Next.js App Router)
+- Client Components only for interactivity
+- Optimize database queries (avoid N+1)
+- Implement pagination for list endpoints
+- Use caching (Redis) for frequently accessed data
+
+### Monitoring
+- Log slow queries
+- Monitor API response times
+- Track error rates
+
+---
+
+## Security Best Practices
+
+### Input Validation
+- Validate all inputs with Zod
+- Sanitize user inputs
+- Use parameterized queries (Prisma handles this)
+
+### Authentication
+- Hash passwords with bcrypt (cost factor 10+)
+- Use secure session management
+- Implement rate limiting on auth endpoints
+
+### Authorization
+- Check permissions on every protected endpoint
+- Never trust client-side authorization alone
+- Log sensitive operations (audit trail)
+
+---
+
+## Testing Preferences
+
+### Test Structure
+- Unit tests for pure functions and services
+- Integration tests for API endpoints and database operations
+- E2E tests for critical user flows
+
+### Test Naming
+- Format: `describe('Component/Function', () => { it('should do something', ...) })`
+- Be descriptive about what is being tested
+
+---
+
+## Environment Variables
+
+### Naming
+- Prefix with service name (e.g., `DATABASE_URL`, `REDIS_URL`)
+- Use UPPER_SNAKE_CASE
+- Document in `.env.example`
+
+### Security
+- Never commit `.env` files
+- Use secret managers in production
+- Validate env variables on startup (Zod)
+
+---
+
+## Additional Preferences
+
+### Code Review
+- Self-review before committing
+- Check for type errors, linting, tests
+- Update documentation if needed
+
+### Dependencies
+- Keep dependencies up-to-date
+- Prefer well-maintained libraries
+- Document reasons for major dependency choices
+
+---
+
+## Notes
+
+- These preferences should be followed consistently across the project.
+- Update this file when preferences change or new patterns emerge.
+- Reference this file when making architectural or coding decisions.

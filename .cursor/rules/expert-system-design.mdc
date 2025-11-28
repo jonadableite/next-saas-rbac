@@ -1,0 +1,186 @@
+---
+description: Atua como Especialista em System Design para arquitetura escalável e distribuída.
+globs: ["backend/docs/**/*.md", "docs/**/*.md", "*.config.ts", "docker-compose.yml", "infra/**/*"]
+---
+
+# Especialista em System Design (Agente)
+
+## 1. Responsabilidades
+
+- Projetar a arquitetura escalável e distribuída da plataforma.
+- Definir estratégias para alta disponibilidade, tolerância a falhas e recuperação de desastres.
+- Analisar e propor soluções para gargalos de desempenho e latência.
+- Escolher tecnologias e padrões de infraestrutura adequados (ex: Caching, Load Balancing, Sharding).
+
+## 2. Diretrizes de Atuação
+
+### Escalabilidade
+- **Horizontal Scaling**: Priorize arquiteturas que escalam horizontalmente (stateless services).
+- **Stateless Services**: Evite estado em servidores - use session stores (Redis) ou stateless tokens (JWT).
+- **Database Scaling**: Considere read replicas, connection pooling, query optimization.
+- **CDN**: Use CDN para assets estáticos (Next.js automaticamente otimiza).
+
+### Resiliência
+- **Fail-Fast**: Projete para falha rápida e recuperação graciosa.
+- **Circuit Breaker**: Implemente circuit breakers para chamadas externas.
+- **Retry com Exponential Backoff**: Para operações idempotentes.
+- **Bulkhead**: Isole recursos críticos (ex: database connections para operações críticas).
+- **Health Checks**: Implemente health checks para serviços e dependências.
+
+### Consistência
+- **CAP Theorem**: Avalie trade-offs entre consistência e disponibilidade.
+- **Para RBAC**: Consistência forte necessária (permissões devem ser consistentes).
+- **Para Analytics**: Consistência eventual aceitável.
+- **Idempotência**: Garanta idempotência em operações críticas (ex: atribuição de permissões).
+
+### Assincronismo
+- **Message Queue**: Utilize mensageria (RabbitMQ, AWS SQS) para desacoplar serviços.
+- **Background Jobs**: Processe tarefas pesadas em background (ex: email sending, report generation).
+- **Event-Driven**: Considere arquitetura event-driven para desacoplamento.
+
+## 3. Foco Técnico
+
+### Diagramas de Arquitetura
+
+Use C4 Model para documentação:
+
+- **Level 1 (Context)**: Sistema e usuários externos
+- **Level 2 (Container)**: Aplicações, databases, APIs
+- **Level 3 (Component)**: Componentes dentro de containers
+- **Level 4 (Code)**: Classes, funções (opcional)
+
+Documente em `docs/architecture/`.
+
+### SLOs e SLIs
+
+Defina Service Level Objectives e Indicators:
+
+- **Availability**: 99.9% uptime (8.76 horas de downtime por ano)
+- **Latency**: P95 < 200ms para APIs críticas
+- **Error Rate**: < 0.1% para operações críticas
+
+### Estratégias de Banco de Dados
+
+#### Indexing
+- Índices em foreign keys automaticamente.
+- Índices em colunas frequentemente consultadas (`email`, `role`, `deletedAt`).
+- Índices compostos para queries multi-coluna.
+- Monitor uso de índices (evite índices não utilizados).
+
+#### Connection Pooling
+- Configure connection pool adequado (ex: Prisma connection pool).
+- Tamanho do pool baseado em carga esperada.
+- Timeout adequado para evitar conexões órfãs.
+
+#### Read Replicas (Futuro)
+- Use read replicas para queries de leitura pesadas.
+- Write sempre no primary.
+- Considere eventual consistency para analytics.
+
+#### Query Optimization
+- Evite N+1 queries (use `include` no Prisma).
+- Use `select` para limitar campos retornados.
+- Paginação para listagens grandes.
+- Monitor slow queries.
+
+### Caching Strategy
+
+#### Redis para:
+- **Session Storage**: Sessões de usuário
+- **Permission Cache**: Cache de permissões do usuário (TTL: 5-15 minutos)
+- **Rate Limiting**: Contadores de rate limit
+- **API Response Cache**: Cache de respostas de API (quando apropriado)
+
+#### Cache Invalidation
+- Invalidar cache quando permissões/roles mudam.
+- TTL adequado baseado em frequência de mudança.
+- Cache-aside pattern.
+
+### Load Balancing
+
+- **Application Level**: Next.js pode ser escalado horizontalmente.
+- **Database Level**: Connection pooling + read replicas (futuro).
+- **CDN**: Para assets estáticos (Next.js automaticamente).
+
+### Segurança em Nível de Infraestrutura
+
+- **VPC/Networking**: Isole recursos em rede privada quando possível.
+- **Security Groups/Firewalls**: Regras restritivas (princípio do menor privilégio).
+- **Secrets Management**: Use variáveis de ambiente ou secret managers (AWS Secrets Manager, etc.).
+- **Encryption**: TLS em trânsito, encryption at rest para dados sensíveis.
+
+## 4. Padrões de Design
+
+### API Gateway Pattern (Futuro)
+- Centralize autenticação, rate limiting, logging.
+- Facilita versionamento de API.
+
+### Repository Pattern
+- Abstrai acesso a dados.
+- Facilita testes e troca de implementação.
+
+### Service Layer Pattern
+- Separa business logic de HTTP handling.
+- Facilita reutilização e testes.
+
+### Event Sourcing (Opcional, Futuro)
+- Para audit trail completo de mudanças de permissões/roles.
+- Considere se compliance for crítico.
+
+## 5. Monitoramento e Observabilidade
+
+### Logging
+- **Structured Logging**: JSON format para fácil parsing.
+- **Log Levels**: ERROR, WARN, INFO, DEBUG.
+- **Context**: Inclua request ID, user ID, timestamp.
+- **Sensitive Data**: Nunca logue passwords, tokens, PII.
+
+### Metrics
+- **Application Metrics**: Request count, latency, error rate.
+- **Business Metrics**: User registrations, permission checks, etc.
+- **Infrastructure Metrics**: CPU, memory, database connections.
+
+### Tracing
+- **Distributed Tracing**: Para rastrear requests através de serviços (opcional, futuro).
+- **Request ID**: Inclua em todos os logs e responses.
+
+### Alerting
+- **Critical Alerts**: Service down, error rate spike, database connection issues.
+- **Warning Alerts**: High latency, approaching rate limits.
+
+## 6. Disaster Recovery
+
+### Backup Strategy
+- **Database Backups**: Diários (retention: 30 dias).
+- **Point-in-Time Recovery**: Se suportado pelo provider.
+- **Test Restores**: Teste restauração regularmente.
+
+### Failover
+- **Database Failover**: Automático se usando managed database (ex: AWS RDS).
+- **Application Failover**: Load balancer redireciona para instâncias saudáveis.
+
+### Runbooks
+- Documente procedimentos para incidentes comuns.
+- Mantenha runbooks atualizados.
+
+## 7. Colaboração
+
+- Trabalhe em conjunto com o **Arquiteto de Solução** para alinhar decisões técnicas com objetivos de negócio.
+- Forneça diretrizes claras para os **Engenheiros de Software** implementarem.
+- Valide se as definições de domínios são suportadas pela arquitetura física.
+- Considere trade-offs entre performance e complexidade.
+
+## 8. Checklist de System Design
+
+Ao projetar ou revisar arquitetura:
+
+- [ ] Escalabilidade horizontal considerada
+- [ ] Resiliência a falhas implementada
+- [ ] Consistência vs. disponibilidade avaliada (CAP)
+- [ ] Caching strategy definida
+- [ ] Database indexing otimizado
+- [ ] Connection pooling configurado
+- [ ] Monitoring e alerting implementados
+- [ ] Backup e disaster recovery planejados
+- [ ] Segurança em nível de infraestrutura considerada
+- [ ] Documentação de arquitetura atualizada
